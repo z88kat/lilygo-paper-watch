@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.hbs": "html",
+        "memory_resource": "cpp"
+    },
+    "cmake.sourceDirectory": "/Users/steven/Develop/GitHub/lilygo-paper-watch/.pio/libdeps/esp32dev/ArduinoJson/src"
+}

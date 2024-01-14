@@ -1,6 +1,4 @@
-![banner](assets/qpaper_banner.png)
-
-lily-paper-watch is a smartwatch firmware implementation for the LILYGO T-Wrist E-Paper ESP32 development board. This repositoy houses the source code along with 3D models and the FreeCAD file of the smartwatch case to make your very own qpaper!
+lily-paper-watch is a smartwatch firmware implementation for the LILYGO T-Wrist E-Paper ESP32 development board (https://github.com/Xinyuan-LilyGO/Wrist-E-Paper). This repositoy houses the source code along with 3D models and the FreeCAD file of the smartwatch case to make your very own qpaper!
 This project is based upon qpaperOS by qewer33 (https://github.com/qewer33/qpaperOS)
 
 ## Features
@@ -19,6 +17,11 @@ The features that are implemented are:
     - [ ] Connect to WiFi via your phone
     - [ ] Setting Geo Locaiton via your phone
 - [ ] Weather display
+- [ ] Alarm (s)
+- [ ] Timer
+- [ ] Focus Timer
+
+As there is no buzzer on the LILYGO T-Wrist E-Paper ESP32 development board, the alarm and timer apps will not be able to make any sound. The alarm and timer apps will only be able to vibrate the watch.
 
 
 Not planned features:
@@ -32,7 +35,7 @@ The above a just power hungry features that are not necessary for a minimal smar
 
 ![screenshot](assets/qpaper_screenshot.jpeg)
 
-More photos of the complete watch can be found under `assets/photos/` (https://github.com/qewer33/qpaperOS/tree/main/assets/photos)
+More photos of the complete watch can be found under `assets/photos/` (https://github.com/z88kat/lilygo-paper-watch/tree/main/assets/photos)
 
 qpaper is meant to be a minimal and lighweight smartwatch that does what it needs to do: always display time. The low power E-Paper screen of the qpaper allows it to always display the time and other information without having the display blank. The ESP32 wakes up every minute to update the display to show the correct time. More information about how the firmware works can be found in the next section.
 
@@ -69,6 +72,7 @@ If you enter your WiFi password in the os_config.h there is a got chance that yo
 
 ```
 cp hooks/pre-commit .git/hooks/pre-commit
+chmod u+x .git/hooks/pre-commit
 ```
 
 ## The Firmware

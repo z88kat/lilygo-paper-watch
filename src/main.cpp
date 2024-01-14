@@ -81,7 +81,18 @@ void setup() {
   adcAttachPin(BAT_ADC);
   analogReadResolution(12);
   analogSetWidth(50);
+
+// Lets turn on the backlight
+// Does not work, appears there is no hardware backlight, we need to attach our own
+#ifdef BACKLIGHT
+  //  pinMode(BACKLIGHT, OUTPUT);
+  //  digitalWrite(BACKLIGHT, HIGH);
+  log(LogLevel::SUCCESS, "Hardware BACKLIGHT initiliazed");
+#endif
+
   log(LogLevel::SUCCESS, "Hardware pins initiliazed");
+
+  preferences.begin(PREFS_KEY);
 
   // Check if the WIFI_SSID and WIFI_PASSWD are set and save them to the preferences
   if (strlen(WIFI_SSID) > 0 && strlen(WIFI_PASSWD) > 0) {
@@ -89,6 +100,16 @@ void setup() {
     preferences.putString("wifi_passwd", WIFI_PASSWD);
     log(LogLevel::SUCCESS, "Wifi Settings Saved");
   }
+
+  // Save the weather api key to the preferences
+  if (strlen(WEATHER_API_KEY) > 0) {
+    preferences.putString("weather_api_key", WEATHER_API_KEY);
+    log(LogLevel::SUCCESS, "Weather API Key Saved");
+  }
+
+  // Reset the weather condition and temp parameters
+  preferences.putString("weather_c", "Unknown");
+  preferences.putString("weather_t", "0.0");
 
   // When the wifi is connected, pull the time from the ntp server
   WiFi.onEvent(WiFiConnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
@@ -100,7 +121,6 @@ void setup() {
   timerAlarmEnable(uiTimer);
   log(LogLevel::SUCCESS, "Hardware timer initiliazed");
 
-  preferences.begin(PREFS_KEY);
   log(LogLevel::SUCCESS, "Preferences initiliazed");
 
   //  Make sure we only do this once, otherwise we'll get a time reset every time we wake up

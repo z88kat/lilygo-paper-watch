@@ -32,3 +32,5 @@
 // Allow the setting of your WiFi credentials
 #define WIFI_SSID              ""
 #define WIFI_PASSWD            ""
+
+# define WEATHER_API_KEY       ""

@@ -14,12 +14,12 @@ void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
   String hoursFiller = rtc->getHour(true) < 10 ? "0" : "";
   String minutesFiller = rtc->getMinute() < 10 ? "0" : "";
   String timeStr = hoursFiller + String(rtc->getHour(true)) + ":" + minutesFiller + String(rtc->getMinute());
-  printCenterString(display, timeStr.c_str(), 100, 125);
+  printCenterString(display, timeStr.c_str(), 100, 118);
 
   // Display the Date
   display->setFont(&Outfit_60011pt7b);
   printCenterString(display, String(String(days[rtc->getDayofWeek()]) + ", " + String(months[rtc->getMonth()]) + " " + String(rtc->getDay())).c_str(),
-                    100, 168);
+                    100, 158);
 
   // Battery
   printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
@@ -46,6 +46,9 @@ void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
   // Weather
   // display->drawBitmap(170, 170, icon_weather_small, 28, 28, GxEPD_BLACK);
   // printRightString(display, "24°C", 166, 192);
+
+  // Testing only
+  // displayWeather(display, "Today", "2.0");
 }
 
 /**
@@ -61,5 +64,30 @@ void disableWifiDisplay(GxEPD_Class *display) {
  */
 void enableWifiDisplay(GxEPD_Class *display) {
   display->drawBitmap(2, 2, icon_wifi_small, 28, 28, GxEPD_BLACK);
+  display->update();
+}
+
+/**
+ *
+ */
+void displayWeather(GxEPD_Class *display, String weatherCondition, String weatherTemp) {
+
+  // Check if the weather condition is empty
+  if (weatherCondition.length() == 0 || weatherCondition == "Unknown") {
+    return;
+  }
+  // Check if the weather temp is empty
+  if (weatherTemp.length() == 0) {
+    return;
+  }
+
+  // Concatenate the weather condition and temperature + C
+  String weatherText = weatherCondition + " " + weatherTemp + "°C";
+
+  // Weather condition (bottom of the screen)
+  // N x,y
+  display->setFont(&Outfit_60011pt7b);
+  printLeftString(display, weatherText.c_str(), 4, 188);
+
   display->update();
 }

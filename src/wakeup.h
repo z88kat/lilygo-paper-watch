@@ -11,6 +11,7 @@
 #include "lib/battery.h"
 #include "lib/log.h"
 #include "os_config.h"
+#include "weather.h"
 
 enum class WakeupFlag { WAKEUP_INIT, WAKEUP_FULL, WAKEUP_LIGHT };
 enum class AwakeState { APPS_MENU, IN_APP };

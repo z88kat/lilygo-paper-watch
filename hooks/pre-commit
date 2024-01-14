@@ -5,3 +5,15 @@ then
   echo "ERROR: Commit contains 'define WIFI_PASSWD' with a non-empty value, remove it before committing."
   exit 1
 fi
+
+if git diff --cached | grep -P 'define WIFI_SSID \S+'
+then
+  echo "ERROR: Commit contains 'define WIFI_SSID' with a non-empty value, remove it before committing."
+  exit 1
+fi
+
+if git diff --cached | grep -P 'define WEATHER_API_KEY \S+'
+then
+  echo "ERROR: Commit contains 'define WEATHER_API_KEY' with a non-empty value, remove it before committing."
+  exit 1
+fi

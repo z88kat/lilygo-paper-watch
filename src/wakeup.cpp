@@ -11,10 +11,17 @@ void wakeupInit(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *
   display->update();
   delay(1000);
   drawHomeUI(display, rtc, calculateBatteryStatus());
+  // Get the weather from the preferences and display it
+  displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
+
+  // Re-draw the display
   display->update();
 
   // Update the time
   performWiFiActions(display, preferences);
+
+  // Re-draw the display
+  display->update();
 }
 
 void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
@@ -22,17 +29,28 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   setCpuFrequencyMhz(80);
 
   drawHomeUI(display, rtc, calculateBatteryStatus());
+
+  // Get the weather from the preferences and display it
+  displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
+
   display->update();
-  display->powerDown();
 
   preferences->putLong64("prev_time_unix", rtc->getEpoch());
 
   wakeupCount++;
 
-  // Once every 24 hours, update the time
-  if (*wakeupCount % 2880 == 0) {
+  // Once every 24 hours connect the WiFi and sync the time with the NTP server
+  //  if (*wakeupCount % 2880 == 0) {
+  //  performWiFiActions(display, preferences);
+  // }
+
+  // Check if the time is 8:00, if so, update the weather
+  if (rtc->getHour(true) == 8 && rtc->getMinute() == 0) {
     performWiFiActions(display, preferences);
+    display->update();
   }
+
+  display->powerDown();
 
   log(LogLevel::INFO, "Going to sleep...");
   digitalWrite(PWR_EN, LOW);
@@ -49,9 +67,6 @@ void wakeupFull(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *
 
   initApps();
   log(LogLevel::SUCCESS, "Apps initialized");
-
-  // WiFi.mode(WIFI_STA);
-  // WiFi.begin(preferences->getString("wifi_ssid"), preferences->getString("wifi_passwd"));
 
   display->fillScreen(GxEPD_WHITE);
   display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
@@ -107,6 +122,7 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
   }
 
   // The WiFi on this device fails all the time, it's completely random when it does or does not connect
+  // I have a connection success rate of 1:20
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("Failed to connect to WiFi");
     // disconnect WiFi as it's no longer needed
@@ -120,6 +136,9 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
     enableWifiDisplay(display);
     // Get the time from the NTP server
     configTime(GMT_OFFSET_SEC, DAY_LIGHT_OFFSET_SEC, NTP_SERVER1);
+    // Get the current weather
+    getWeather(display, preferences);
+
     // Disconnect WiFi as it's no longer needed, saves lots of power
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
