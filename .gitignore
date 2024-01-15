@@ -39,3 +39,4 @@
 .vscode/ipch
 .DS_Store
 src/config.h
+src/os_config_copy.h

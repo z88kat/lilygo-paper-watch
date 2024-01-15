@@ -15,6 +15,15 @@ void getWeather(GxEPD_Class *display, Preferences *preferences) {
     return;
   }
 
+  // Get the weather location from the preferences
+  if (strlen(preferences->getString("location").c_str()) == 0) {
+    log(LogLevel::WARNING, "Weather Location not set");
+    return;
+  }
+
+  // The current location
+  String location = preferences->getString("location");
+
   String condition = "";
   String temp_c = "";
 
@@ -22,7 +31,7 @@ void getWeather(GxEPD_Class *display, Preferences *preferences) {
 
   // Your Domain name with URL path or IP address with path
   String serverName = "https://api.weatherapi.com/v1/current.json";
-  String parameters = "?key=" + preferences->getString("weather_api_key") + "&q=Munich,Germany" + "&aqi=no";
+  String parameters = "?key=" + preferences->getString("weather_api_key") + "&q=" + location + "&aqi=no";
 
   // Your Domain name with URL path or IP address with path
   serverName += parameters;

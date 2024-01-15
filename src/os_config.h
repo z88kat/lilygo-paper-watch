@@ -34,3 +34,5 @@
 #define WIFI_PASSWD            ""
 // Add the weather API key
 # define WEATHER_API_KEY       ""
+
+# define WEATHER_LOCATION   ""

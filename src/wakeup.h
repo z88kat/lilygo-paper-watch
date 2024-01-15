@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ESP32Time.h"
-#include "GxDEPG0150BN/GxDEPG0150BN.h" // 1.54" b/w 200x200
+#include "GxDEPG0150BN/GxDEPG0150BN.h" // 1.54 inches b/w 200x200
 #include "GxEPD.h"
 #include "Preferences.h"
 #include "WiFi.h"

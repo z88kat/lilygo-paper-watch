@@ -1,18 +1,18 @@
 #!/bin/sh
 
-if git diff --cached | grep -P 'define WIFI_PASSWD \S+'
+if git diff --cached | awk '/define WIFI_PASSWD [^ ]+/ {print}'
 then
   echo "ERROR: Commit contains 'define WIFI_PASSWD' with a non-empty value, remove it before committing."
   exit 1
 fi
 
-if git diff --cached | grep -P 'define WIFI_SSID \S+'
+if git diff --cached | awk '/define WIFI_SSID [^ ]+/ {print}'
 then
   echo "ERROR: Commit contains 'define WIFI_SSID' with a non-empty value, remove it before committing."
   exit 1
 fi
 
-if git diff --cached | grep -P 'define WEATHER_API_KEY \S+'
+if git diff --cached | awk '/define WEATHER_API_KEY [^ ]+/ {print}'
 then
   echo "ERROR: Commit contains 'define WEATHER_API_KEY' with a non-empty value, remove it before committing."
   exit 1

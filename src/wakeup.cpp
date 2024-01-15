@@ -21,7 +21,7 @@ void wakeupInit(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *
   performWiFiActions(display, preferences);
 
   // Re-draw the display
-  display->update();
+  // display->update();
 }
 
 void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
@@ -37,17 +37,16 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
 
   preferences->putLong64("prev_time_unix", rtc->getEpoch());
 
-  wakeupCount++;
+  // wakeupCount++;
 
   // Once every 24 hours connect the WiFi and sync the time with the NTP server
   //  if (*wakeupCount % 2880 == 0) {
-  //  performWiFiActions(display, preferences);
+  // performWiFiActions(display, preferences);
   // }
 
   // Check if the time is 8:00, if so, update the weather
   if (rtc->getHour(true) == 8 && rtc->getMinute() == 0) {
     performWiFiActions(display, preferences);
-    display->update();
   }
 
   display->powerDown();
@@ -110,15 +109,92 @@ void wakeupFullLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class
  */
 void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
 
+  String wifi_ssid = preferences->getString("wifi_ssid", "");
+  String wifi_password = preferences->getString("wifi_passwd", "");
+  // Serial.println(wifi_ssid.c_str());
+  // Serial.println(wifi_password.c_str());
+
   // Turn on the wifi
   WiFi.mode(WIFI_STA);
-  WiFi.begin(preferences->getString("wifi_ssid"), preferences->getString("wifi_passwd"));
+
+  int n = WiFi.scanNetworks();
+  if (n == 0) {
+    Serial.println("no networks found");
+  } else {
+    Serial.print(n);
+    Serial.println(" networks found");
+
+    for (int i = 0; i < n; ++i) {
+      // Print SSID and RSSI for each network found
+      Serial.printf("%2d", i + 1);
+      Serial.print(" | ");
+      Serial.printf("%-32.32s", WiFi.SSID(i).c_str());
+      Serial.print(" | ");
+      Serial.printf("%4d", WiFi.RSSI(i));
+      Serial.print(" | ");
+      Serial.printf("%2d", WiFi.channel(i));
+      Serial.print(" | ");
+      switch (WiFi.encryptionType(i)) {
+      case WIFI_AUTH_OPEN:
+        Serial.print("open");
+        break;
+      case WIFI_AUTH_WEP:
+        Serial.print("WEP");
+        break;
+      case WIFI_AUTH_WPA_PSK:
+        Serial.print("WPA");
+        break;
+      case WIFI_AUTH_WPA2_PSK:
+        Serial.print("WPA2");
+        break;
+      case WIFI_AUTH_WPA_WPA2_PSK:
+        Serial.print("WPA+WPA2");
+        break;
+      case WIFI_AUTH_WPA2_ENTERPRISE:
+        Serial.print("WPA2-EAP");
+        break;
+      case WIFI_AUTH_WPA3_PSK:
+        Serial.print("WPA3");
+        break;
+      case WIFI_AUTH_WPA2_WPA3_PSK:
+        Serial.print("WPA2+WPA3");
+        break;
+      case WIFI_AUTH_WAPI_PSK:
+        Serial.print("WAPI");
+        break;
+      default:
+        Serial.print("unknown");
+      }
+      Serial.println();
+      delay(10);
+    }
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.persistent(false);
+  WiFi.setTxPower(WIFI_POWER_2dBm); // Required otherwise it does not work!
+  WiFi.hostname("LilyPaperWatch");
+  WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
 
   // Wait for connection
+  /*
+  Code Value Meaning
+  WL_IDLE_STATUS 0 WiFi is in process of changing between statuses
+  WL_NO_SSID_AVAIL 1 SSID cannot be reached
+  WL_SCAN_COMPLETED 2
+  WL_CONNECTED 3 Successful connection is established
+  WL_CONNECT_FAILED 4 Password is incorrect
+  WL_CONNECTION_LOST 5
+  WL_DISCONNECTED 6 Module is not configured in station mode
+
+  You should normally get a couple of seconds of "6" followed by a single "3".
+  */
   uint8_t i = 0;
+  // while (WiFi.localIP().toString() == "0.0.0.0" && i++ < 60) {
   while (WiFi.status() != WL_CONNECTED && i++ < 60) { // Wait for the WiFI connection completion
     delay(500);
     Serial.print(".");
+    Serial.print(WiFi.status());
   }
 
   // The WiFi on this device fails all the time, it's completely random when it does or does not connect
@@ -127,7 +203,7 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
     Serial.println("Failed to connect to WiFi");
     // disconnect WiFi as it's no longer needed
     WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
+    // WiFi.mode(WIFI_OFF);
     disableWifiDisplay(display);
     log(LogLevel::ERROR, "WiFi failed to connect");
   } else {
@@ -139,9 +215,12 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
     // Get the current weather
     getWeather(display, preferences);
 
+    Serial.print("# IP address: ");
+    Serial.println(WiFi.localIP());
+
     // Disconnect WiFi as it's no longer needed, saves lots of power
     WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
+    // WiFi.mode(WIFI_OFF);
   }
 
   // Read the WIFI_SSID and WIFI_PASSWD from the preferences into string variables
