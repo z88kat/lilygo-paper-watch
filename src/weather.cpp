@@ -50,10 +50,14 @@ void getWeather(GxEPD_Class *display, Preferences *preferences) {
     // The payload is a JSON object, we need to get current.condition.text & current.temp_c
 
     // Get the json object from the response
-    StaticJsonDocument<256> doc;
+    String json = http.getString();
+    // Serial.println(json);
+
+    // Get the json object from the response
+    StaticJsonDocument<1024> doc;
 
     // Parse the incoming JSON response
-    DeserializationError error = deserializeJson(doc, http.getString());
+    DeserializationError error = deserializeJson(doc, json);
 
     // Test if parsing succeeds.
     if (error) {
@@ -67,7 +71,11 @@ void getWeather(GxEPD_Class *display, Preferences *preferences) {
     temp_c = doc["current"]["temp_c"].as<String>();
 
     // Save the current condition to the preferences
-    preferences->putString("weather_c", condition);
+    bool result = preferences->putString("weather_c", condition);
+    // Check if preference was saved
+    if (!result) {
+      log(LogLevel::ERROR, "Failed to save preference");
+    }
     preferences->putString("weather_t", temp_c);
 
   } else {

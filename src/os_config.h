@@ -33,6 +33,8 @@
 #define WIFI_SSID              ""
 #define WIFI_PASSWD            ""
 // Add the weather API key
-# define WEATHER_API_KEY       ""
+#define WEATHER_API_KEY       ""
 
-# define WEATHER_LOCATION   ""
+// Set your address according to https://openweathermap.org/find eg: London,UK
+// And the geo-location will be calculated automatically to set the weather for your location
+#define WEATHER_LOCATION   ""

@@ -72,6 +72,10 @@ void enableWifiDisplay(GxEPD_Class *display) {
  */
 void displayWeather(GxEPD_Class *display, String weatherCondition, String weatherTemp) {
 
+  Serial.println("displayWeather");
+  Serial.println(weatherCondition);
+  Serial.println(weatherTemp);
+
   // Check if the weather condition is empty
   if (weatherCondition.length() == 0 || weatherCondition == "Unknown") {
     return;

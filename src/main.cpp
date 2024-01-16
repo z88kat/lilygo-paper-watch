@@ -108,8 +108,8 @@ void setup() {
   }
 
   // Reset the weather condition and temp parameters
-  preferences.putString("weather_c", "Unknown");
-  preferences.putString("weather_t", "0.0");
+  // preferences.putString("weather_c", "Unknown");
+  // preferences.putString("weather_t", "0.0");
 
   // Save the current location as defined in the os_config.h
   if (strlen(WEATHER_LOCATION) > 0) {
