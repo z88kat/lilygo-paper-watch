@@ -54,18 +54,12 @@ void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
 /**
  * Show the Wifi is disabled icon (indicates that the wifi connection failed)
  */
-void disableWifiDisplay(GxEPD_Class *display) {
-  display->drawBitmap(2, 2, icon_no_ble_small, 28, 28, GxEPD_BLACK);
-  display->update();
-}
+void disableWifiDisplay(GxEPD_Class *display) { display->drawBitmap(2, 2, icon_no_ble_small, 28, 28, GxEPD_BLACK); }
 
 /**
  * Add the wifi - is active - icon to the display
  */
-void enableWifiDisplay(GxEPD_Class *display) {
-  display->drawBitmap(2, 2, icon_wifi_small, 28, 28, GxEPD_BLACK);
-  display->update();
-}
+void enableWifiDisplay(GxEPD_Class *display) { display->drawBitmap(2, 2, icon_wifi_small, 28, 28, GxEPD_BLACK); }
 
 /**
  *
@@ -92,6 +86,12 @@ void displayWeather(GxEPD_Class *display, String weatherCondition, String weathe
   // N x,y
   display->setFont(&Outfit_60011pt7b);
   printLeftString(display, weatherText.c_str(), 4, 188);
+}
 
-  display->update();
+/**
+ * Display the battery status
+ */
+void displayBatteryStatus(GxEPD_Class *display, int batteryStatus) {
+  // Battery
+  printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
 }

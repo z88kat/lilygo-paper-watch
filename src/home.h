@@ -15,3 +15,4 @@ void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus);
 void disableWifiDisplay(GxEPD_Class *display);
 void enableWifiDisplay(GxEPD_Class *display);
 void displayWeather(GxEPD_Class *display, String weatherCondition, String weatherTemp);
+void displayBatteryStatus(GxEPD_Class *display, int batteryStatus);

@@ -2,5 +2,7 @@
 
 #include "Arduino.h"
 #include "os_config.h"
+#include "Preferences.h"
 
-int calculateBatteryStatus();
+
+int calculateBatteryStatus(Preferences *preferences);

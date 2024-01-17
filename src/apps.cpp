@@ -1,5 +1,6 @@
 #include "apps.h"
 #include "apps/about/app_about.h"
+#include "apps/time_config/app_time_config.h"
 #include "apps/wifi_smartconfig/app_wifi_smartconfig.h"
 #include "lib/log.h"
 
@@ -19,6 +20,7 @@ void App::buttonDoubleClick() {}
 
 void initApps() {
   log(LogLevel::INFO, "Starting init apps...");
+  apps.emplace_back(std::move(appTimeConfig));
   apps.emplace_back(std::move(appWiFiSmartconfig));
   apps.emplace_back(std::move(appAbout));
 }
@@ -36,8 +38,9 @@ void drawAppsListUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
   printLeftString(display, timeStr.c_str(), 11, 22);
 
   // Battery
-  printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
-
+  if (batteryStatus >= 0) {
+    printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
+  }
   const unsigned char *icon_battery_small_array[6] = {epd_bitmap_icon_battery_0_small,  epd_bitmap_icon_battery_20_small,
                                                       epd_bitmap_icon_battery_40_small, epd_bitmap_icon_battery_60_small,
                                                       epd_bitmap_icon_battery_80_small, epd_bitmap_icon_battery_100_small};

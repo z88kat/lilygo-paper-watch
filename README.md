@@ -15,13 +15,11 @@ The features that are implemented are:
     - [x] WiFi Smartconfig (connect the watch to WiFi via your phone)
     - [ ] Setting time via your phone
     - [ ] Connect to WiFi via your phone
-    - [ ] Setting Geo Locaiton via your phone
-- [ ] Weather display
-- [ ] Alarm (s)
-- [ ] Timer
+    - [ ] Setting Geo Locaiton Address via your phone
+- [x] Weather display
 - [ ] Focus Timer
 
-As there is no buzzer on the LILYGO T-Wrist E-Paper ESP32 development board, the alarm and timer apps will not be able to make any sound. The alarm and timer apps will only be able to vibrate the watch.
+As there is no buzzer on the LILYGO T-Wrist E-Paper ESP32 development board, the and timer app will not be able to make any sound.
 
 
 Not planned features:

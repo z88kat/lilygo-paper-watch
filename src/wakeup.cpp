@@ -2,15 +2,21 @@
 
 // Setup
 
+// When the watch is first powered on, we need to initialize the time
+// We use the old existing time which is stored in the preferences
+// Then we atttempt to fetch the time from the server, so on the 2nd cycle the time will be updated
+//
 void wakeupInit(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
   log(LogLevel::INFO, "WAKEUP_INIT");
 
   rtc->setTime(preferences->getLong64("prev_time_unix", 0) + 15);
 
-  display->fillScreen(GxEPD_WHITE);
-  display->update();
-  delay(1000);
-  drawHomeUI(display, rtc, calculateBatteryStatus());
+  // display->fillScreen(GxEPD_WHITE);
+  //   display->update();
+  //   delay(1000);
+  // Get the battery status from the preferences
+  int batteryStatus = preferences->getInt("battery_level", 0);
+  drawHomeUI(display, rtc, batteryStatus);
   // Get the weather from the preferences and display it
   displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
 
@@ -19,38 +25,42 @@ void wakeupInit(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *
 
   // Update the time
   performWiFiActions(display, preferences);
-
-  // Re-draw the display
-  // display->update();
 }
 
 void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
   log(LogLevel::INFO, "WAKEUP_LIGHT");
   setCpuFrequencyMhz(80);
 
-  drawHomeUI(display, rtc, calculateBatteryStatus());
+  // Get the battery status from the preferences
+  int batteryStatus = preferences->getInt("battery_level", 0);
+
+  // Draw the time and date
+  drawHomeUI(display, rtc, batteryStatus);
+
+  // Update the battery status every 10 minutes, its enough, save on battery
+  if (*wakeupCount % 10 == 0) {
+    calculateBatteryStatus(preferences);
+  }
 
   // Get the weather from the preferences and display it
   displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
 
+  // Refresh the display
   display->update();
+  // Power it down to save battery
+  display->powerDown();
 
   preferences->putLong64("prev_time_unix", rtc->getEpoch());
 
-  // wakeupCount++;
+  // Increase the wakeup count
+  wakeupCount++;
 
-  // Once every 24 hours connect the WiFi and sync the time with the NTP server
-  //  if (*wakeupCount % 2880 == 0) {
-  // performWiFiActions(display, preferences);
-  // }
-
-  // Check if the time is 8:00, if so, update the weather
-  if (rtc->getHour(true) == 8 && rtc->getMinute() == 0) {
+  // Perform the WiFi actions every 4 hours
+  if (*wakeupCount % 240 == 0) {
     performWiFiActions(display, preferences);
   }
 
-  display->powerDown();
-
+  // snooze....
   log(LogLevel::INFO, "Going to sleep...");
   digitalWrite(PWR_EN, LOW);
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_KEY, 0);
@@ -91,7 +101,7 @@ void wakeupLightLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Clas
 
 void wakeupFullLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class *display, ESP32Time *rtc, AwakeState awakeState) {
   if (awakeState == AwakeState::APPS_MENU) {
-    drawAppsListUI(display, rtc, calculateBatteryStatus());
+    drawAppsListUI(display, rtc, -1);
     display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
   } else {
     apps[currentAppIndex]->drawUI(display);
@@ -105,14 +115,14 @@ void wakeupFullLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class
 }
 
 /**
- * @brief Perform the WiFi actions such as connecting to the network and getting the time
+ * Perform the WiFi actions such as connecting to the network and getting the time
+ * This strange configuration was the only way I managed to get the WiFi working on this device
+ * don't mess with it! :-)
  */
 void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
 
   String wifi_ssid = preferences->getString("wifi_ssid", "");
   String wifi_password = preferences->getString("wifi_passwd", "");
-  // Serial.println(wifi_ssid.c_str());
-  // Serial.println(wifi_password.c_str());
 
   // Turn on the wifi
   WiFi.mode(WIFI_STA);
@@ -222,14 +232,4 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
   }
-
-  // Read the WIFI_SSID and WIFI_PASSWD from the preferences into string variables
-  // String wifi_ssid = preferences->getString("wifi_ssid", "");
-  // String wifi_passwd = preferences->getString("wifi_passwd", "");
-  // log(LogLevel::INFO, wifi_passwd.c_str());
-
-  // Print out the device id
-  // Serial.println("Device ID: " + String((uint32_t)(ESP.getEfuseMac() >> 32), HEX) + String((uint32_t)ESP.getEfuseMac(), HEX));
-
-  // configTime(GMT_OFFSET_SEC, DAY_LIGHT_OFFSET_SEC, NTP_SERVER1);
 }
