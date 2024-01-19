@@ -9,21 +9,21 @@
 void wakeupInit(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
   log(LogLevel::INFO, "WAKEUP_INIT");
 
+  // ?? why add 15?
   rtc->setTime(preferences->getLong64("prev_time_unix", 0) + 15);
 
-  // display->fillScreen(GxEPD_WHITE);
-  //   display->update();
-  //   delay(1000);
   // Get the battery status from the preferences
   int batteryStatus = preferences->getInt("battery_level", 0);
   drawHomeUI(display, rtc, batteryStatus);
+
   // Get the weather from the preferences and display it
   displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
+  displayFocusTime(display, preferences->getInt("focus_time", 0));
 
   // Re-draw the display
   display->update();
 
-  // Update the time
+  // Update the time & weather
   performWiFiActions(display, preferences);
 }
 
@@ -33,6 +33,8 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
 
   // Get the battery status from the preferences
   int batteryStatus = preferences->getInt("battery_level", 0);
+  // Get the focus time
+  int focusTime = preferences->getInt("focus_time", 0);
 
   // Draw the time and date
   drawHomeUI(display, rtc, batteryStatus);
@@ -44,6 +46,7 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
 
   // Get the weather from the preferences and display it
   displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
+  displayFocusTime(display, focusTime);
 
   // Refresh the display
   display->update();
@@ -52,13 +55,19 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
 
   preferences->putLong64("prev_time_unix", rtc->getEpoch());
 
-  // Increase the wakeup count
-  wakeupCount++;
+  // Decrease the focus time, by 1 minute
+  if (focusTime > 0) {
+    preferences->putInt("focus_time", focusTime - 1);
+  }
 
   // Perform the WiFi actions every 4 hours
-  if (*wakeupCount % 240 == 0) {
+  if (wakeupCount != nullptr && *wakeupCount >= 240) {
     performWiFiActions(display, preferences);
+    // Reset the counter
+    wakeupCount = 0;
   }
+  // Increase the wakeup count
+  wakeupCount++;
 
   // snooze....
   log(LogLevel::INFO, "Going to sleep...");
@@ -68,17 +77,46 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   esp_deep_sleep_start();
 }
 
+//
+// Wake up the device from deep sleep and perform actions for the focus timer
+//
+void wakeupDeepSleep(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
+  log(LogLevel::INFO, "WAKEUP_DEEP_SLEEP");
+  setCpuFrequencyMhz(80);
+
+  // Get the battery status from the preferences
+  int batteryStatus = preferences->getInt("battery_level", 0);
+  drawHomeUI(display, rtc, batteryStatus);
+
+  // Get the weather from the preferences and display it
+  displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
+
+  // Let us start focus time if not already running. Get the focus time from the preferences
+  int focusTime = preferences->getInt("focus_time", 0);
+  if (focusTime <= 0) {
+    // Start the focus time to 25 minutes
+    preferences->putInt("focus_time", 25);
+    focusTime = 25;
+  }
+
+  displayFocusTime(display, focusTime);
+
+  display->update();
+
+  log(LogLevel::INFO, "Totally wake now mate...");
+}
+
 void wakeupFull(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
   log(LogLevel::INFO, "WAKEUP_FULL");
   setCpuFrequencyMhz(240);
 
-  wakeupCount = 0;
+  // initApps();
+  log(LogLevel::SUCCESS, "wakeupFull: Apps initialized");
 
-  initApps();
-  log(LogLevel::SUCCESS, "Apps initialized");
+  //  display->fillScreen(GxEPD_WHITE);
+  //  display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
 
-  display->fillScreen(GxEPD_WHITE);
-  display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
+  // enableWifiDisplay(display);
 }
 
 // Loop
@@ -114,6 +152,18 @@ void wakeupFullLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class
   }
 }
 
+//
+// The device has woken from deep sleep, perform the wakeup process
+//
+void wakeupDeepSleepLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class *display, ESP32Time *rtc, AwakeState awakeState) {
+
+  if (sleepTimer == 15) {
+    *wakeupType = WakeupFlag::WAKEUP_LIGHT;
+    esp_sleep_enable_timer_wakeup(1000000);
+    log(LogLevel::INFO, "Going to back to light mode...");
+  }
+}
+
 /**
  * Perform the WiFi actions such as connecting to the network and getting the time
  * This strange configuration was the only way I managed to get the WiFi working on this device
@@ -123,6 +173,12 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
 
   String wifi_ssid = preferences->getString("wifi_ssid", "");
   String wifi_password = preferences->getString("wifi_passwd", "");
+
+  // If the wifi is not configured, we can't do anything, so return
+  if (wifi_ssid.length() == 0 || wifi_password.length() == 0) {
+    log(LogLevel::ERROR, "WiFi not configured, skipping WiFi actions");
+    return;
+  }
 
   // Turn on the wifi
   WiFi.mode(WIFI_STA);
@@ -224,6 +280,7 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
     configTime(GMT_OFFSET_SEC, DAY_LIGHT_OFFSET_SEC, NTP_SERVER1);
     // Get the current weather
     getWeather(display, preferences);
+    display->update(); // Update the display otherwise we see nothing new
 
     Serial.print("# IP address: ");
     Serial.println(WiFi.localIP());

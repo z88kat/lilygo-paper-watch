@@ -1,8 +1,4 @@
 /**
- *
- */
-
-/**
  * Perform a HTTPS GET request to the OpenWeatherMap API
  */
 #include "weather.h"
@@ -54,7 +50,7 @@ void getWeather(GxEPD_Class *display, Preferences *preferences) {
     // Serial.println(json);
 
     // Get the json object from the response
-    StaticJsonDocument<1024> doc;
+    StaticJsonDocument<2048> doc;
 
     // Parse the incoming JSON response
     DeserializationError error = deserializeJson(doc, json);

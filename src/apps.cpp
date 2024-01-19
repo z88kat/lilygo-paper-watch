@@ -1,6 +1,5 @@
 #include "apps.h"
 #include "apps/about/app_about.h"
-#include "apps/time_config/app_time_config.h"
 #include "apps/wifi_smartconfig/app_wifi_smartconfig.h"
 #include "lib/log.h"
 
@@ -20,7 +19,6 @@ void App::buttonDoubleClick() {}
 
 void initApps() {
   log(LogLevel::INFO, "Starting init apps...");
-  apps.emplace_back(std::move(appTimeConfig));
   apps.emplace_back(std::move(appWiFiSmartconfig));
   apps.emplace_back(std::move(appAbout));
 }

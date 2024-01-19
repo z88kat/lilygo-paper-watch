@@ -10,14 +10,8 @@ The features that are implemented are:
 - [x] Display time and date
 - [x] Display battery percentage
 - [x] Have the ESP32 MCU on deep sleep and wakeup every minute to update the display for power saving
-- [x] Apps and app system
-    - [x] About (minimal example app)
-    - [x] WiFi Smartconfig (connect the watch to WiFi via your phone)
-    - [ ] Setting time via your phone
-    - [ ] Connect to WiFi via your phone
-    - [ ] Setting Geo Locaiton Address via your phone
 - [x] Weather display
-- [ ] Focus Timer
+- [x] Focus Timer
 
 As there is no buzzer on the LILYGO T-Wrist E-Paper ESP32 development board, the and timer app will not be able to make any sound.
 
@@ -78,31 +72,14 @@ chmod u+x .git/hooks/pre-commit
 qpaperOS is the firmware part of the qpaper project. It is developed to work with the LILYGO T-Wrist E-Paper ESP32 development board. It uses the espressif-esp32-arduino framework and PlatformIO for development.
 
 
-### Apps
+## Focus Timer
 
-Apps live under the `src/apps` directory. Each app has it's own subdirectory and consists of 3 (or 2, one of them is optional) files.
+The focus timer is a simple timer that counts down from 25 minutes. It is meant to be used for the Pomodoro Technique (https://en.wikipedia.org/wiki/Pomodoro_Technique). The timer will vibrate when the time is up. The timer can be started by  pressing the user button (top right of the case). The timer can be reset by long pressing the user button.
 
-```sh
-src/
-    apps/
-        appname/
-            app_appname.cpp
-            app_appname.h
-            app_appname_res.h  # optional
-```
+## Deep Sleep
 
-The `app_appname.h` file is the header file of the app. It contains the class and the extern instance definition of the app. Apps should extend the `App` class defined in `src/apps.h`. The methods that are going to be used by the app should be overriden methods from the `App` class. The instance should be an instance of the newly defined app class wrapped in an `std::unique_pointer`. There are 5 methods that apps can override from the App class:
+The ESP32 is put into deep sleep mode to save power. The ESP32 will wake up every minute to update the display and then go back to sleep. The ESP32 will also wake up when the user button is pressed.  The deep sleep makes starting and using the timer a bit akward as the ESP32 needs to wake up first. But that's the price we pay to keep the device as power efficient as possible.
 
-- `setup()`: Runs before the app gets started. Useful for initializing variable defaults or loading preferences.
-- `drawUI(GxEPD_Class *display)`: Runs every frame when the app is running. This method should draw the user interface of the app using `display`.
-- `exit()`: Runs when the app gets exited. Useful for saving preferences and such.
-- `buttonClick()`: Runs when the user button gets clicked while in the app.
-- `buttonDoubleClick()`: Runs when the user button gets double clicked while in the app.
+## Battery Life
 
-The `app_appname.cpp` file is the source file of the app. The source file should define the instance and implement the necessary app methods. The app constructor takes 2 argumnets: the first argument `String name` is the name and the second argument `uint16_t* icon` is the icon resource of the app.
-
-The `app_appname_res.h` file contains the custom resources that are used by the app. These resources can be fonts, icons etc. This file is not necessary if the app doesn't have any custom resources. The app icon should go in `src/resources/app_icons.h`, not the app resource file.
-
-The finished app should be included in `src/apps.cpp` and should be added to the `apps` array in the `initApps()` function.
-
-You can take a look at the source code of the "About" app in `apps/about` for an example of a minimal app.
+The battery life of the qpaper is approx. 3-4 days with a 250 mAh battery. The battery life can be extended by using a bigger battery. The battery life can be extended even further by disabling the WiFi connection in `src/os_config.h`. This will disable the NTP time sync and weather display.

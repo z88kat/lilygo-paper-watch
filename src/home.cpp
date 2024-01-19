@@ -34,41 +34,22 @@ void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
   // display->drawBitmap(2, 2, icon_wifi_small, 28, 28, GxEPD_BLACK);
   // BLE Tooth
   // display->drawBitmap(30, 2, icon_no_ble_small, 28, 28, GxEPD_BLACK);
-
-  // Prayer time
-  // display->drawBitmap(2, 142, icon_prayer_small, 28, 28, GxEPD_BLACK);
-  // printLeftString(display, "Isha, 22:10", 34, 164);
-
-  // Steps
-  // display->drawBitmap(2, 170, icon_steps_small, 28, 28, GxEPD_BLACK);
-  //  printLeftString(display, "7.546", 34, 192);
-
-  // Weather
-  // display->drawBitmap(170, 170, icon_weather_small, 28, 28, GxEPD_BLACK);
-  // printRightString(display, "24°C", 166, 192);
-
-  // Testing only
-  // displayWeather(display, "Today", "2.0");
 }
 
 /**
  * Show the Wifi is disabled icon (indicates that the wifi connection failed)
  */
-void disableWifiDisplay(GxEPD_Class *display) { display->drawBitmap(2, 2, icon_no_ble_small, 28, 28, GxEPD_BLACK); }
+void disableWifiDisplay(GxEPD_Class *display) { display->drawBitmap(2, 24, icon_no_ble_small, 28, 28, GxEPD_BLACK); }
 
 /**
  * Add the wifi - is active - icon to the display
  */
-void enableWifiDisplay(GxEPD_Class *display) { display->drawBitmap(2, 2, icon_wifi_small, 28, 28, GxEPD_BLACK); }
+void enableWifiDisplay(GxEPD_Class *display) { display->drawBitmap(2, 24, icon_wifi_small, 28, 28, GxEPD_BLACK); }
 
 /**
- *
+ * Display the weather condition and temp
  */
 void displayWeather(GxEPD_Class *display, String weatherCondition, String weatherTemp) {
-
-  Serial.println("displayWeather");
-  Serial.println(weatherCondition);
-  Serial.println(weatherTemp);
 
   // Check if the weather condition is empty
   if (weatherCondition.length() == 0 || weatherCondition == "Unknown") {
@@ -94,4 +75,21 @@ void displayWeather(GxEPD_Class *display, String weatherCondition, String weathe
 void displayBatteryStatus(GxEPD_Class *display, int batteryStatus) {
   // Battery
   printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
+}
+
+/**
+ * If the focus time is running display it, once we get to 0 we stop and leave it at 0
+ */
+void displayFocusTime(GxEPD_Class *display, int focusTime) {
+
+  if (focusTime > 0) {
+    // Focus Time
+    display->setFont(&Outfit_60011pt7b);
+    String hoursFiller = focusTime < 10 ? "0" : "";
+    String timeStr = hoursFiller + String(focusTime) + ":00";
+    printLeftString(display, timeStr.c_str(), 4, 22);
+  } else {
+    String a = "--:--";
+    printLeftString(display, a.c_str(), 4, 22);
+  }
 }

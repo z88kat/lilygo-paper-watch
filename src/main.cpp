@@ -64,17 +64,18 @@ void setup() {
   SPI.begin(SPI_SCK, -1, SPI_DIN, EPD_CS);
 
   pinMode(PWR_EN, OUTPUT);
-  // TODO:  pinMode(PIN_MOTOR, OUTPUT);
+  //  pinMode(PIN_MOTOR, OUTPUT);
   digitalWrite(PWR_EN, HIGH);
   // TODO:  digitalWrite(PIN_MOTOR, LOW);
   pinMode(PIN_KEY, INPUT_PULLUP);
+
   ButtonConfig *buttonConfig = button.getButtonConfig();
   buttonConfig->setEventHandler(handleButtonEvent);
   buttonConfig->setFeature(ButtonConfig::kFeatureClick);
   buttonConfig->setFeature(ButtonConfig::kFeatureDoubleClick);
   buttonConfig->setFeature(ButtonConfig::kFeatureLongPress);
-  buttonConfig->setClickDelay(200);
-  buttonConfig->setDebounceDelay(10);
+  //  buttonConfig->setClickDelay(200);
+  // buttonConfig->setDebounceDelay(10);
   buttonConfig->setLongPressDelay(1000);
 
   pinMode(BAT_ADC, ANALOG);
@@ -83,7 +84,7 @@ void setup() {
   analogSetWidth(50);
 
 // Lets turn on the backlight
-// Does not work, appears there is no hardware backlight, we need to attach our own
+// Does not work, appears there is no hardware backlight on my model
 #ifdef BACKLIGHT
   //  pinMode(BACKLIGHT, OUTPUT);
   //  digitalWrite(BACKLIGHT, HIGH);
@@ -93,6 +94,11 @@ void setup() {
   log(LogLevel::SUCCESS, "Hardware pins initiliazed");
 
   preferences.begin(PREFS_KEY);
+
+  // Check if the button was pressed while booting
+  if (button.isPressedRaw()) {
+    Serial.println(F("setup(): button was pressed while booting, resetting configuration"));
+  }
 
   // Check if the WIFI_SSID and WIFI_PASSWD are set and save them to the preferences
   if (strlen(WIFI_SSID) > 0 && strlen(WIFI_PASSWD) > 0) {
@@ -141,25 +147,44 @@ void setup() {
   display.setRotation(1);
   log(LogLevel::SUCCESS, "Display initiliazed");
 
-  if (digitalRead(PIN_KEY) == 0)
-    wakeup = WakeupFlag::WAKEUP_FULL;
+  // The button has been pressed to wake up the device
+  if (digitalRead(PIN_KEY) == 0) {
+    // Set the status - wake me up from deep sleep and get the buttons working again
+    wakeup = WakeupFlag::WAKEUP_DEEP_SLEEP;
+    log(LogLevel::INFO, "Button pressed, starting wakeup process...");
+  }
   log(LogLevel::INFO, "Starting wakeup process...");
 
   switch (wakeup) {
+    // Power on the device and initialize the display, pull time via WiFi
   case WakeupFlag::WAKEUP_INIT:
     wakeupInit(&wakeup, &wakeupCount, &display, &rtc, &preferences);
     break;
 
+    // Refresh the time and sleep
   case WakeupFlag::WAKEUP_LIGHT:
     wakeupLight(&wakeup, &wakeupCount, &display, &rtc, &preferences);
+    // xTaskCreate(buttonUpdateTask, "ButtonUpdateTask", 10000, NULL, 1, NULL);
     break;
 
-  case WakeupFlag::WAKEUP_FULL:
+    // Wake the device from deep sleep when the button is pressed
+  case WakeupFlag::WAKEUP_DEEP_SLEEP:
+    wakeupDeepSleep(&wakeup, &wakeupCount, &display, &rtc, &preferences);
     xTaskCreate(buttonUpdateTask, "ButtonUpdateTask", 10000, NULL, 1, NULL);
+    break;
+
+    // The ESP is asleep, perform the wakeup process and do not sleep again
+
+  case WakeupFlag::WAKEUP_FULL:
     wakeupFull(&wakeup, &wakeupCount, &display, &rtc, &preferences);
+    // Now we are awake the button can be used for input
+    // Otherwise the button will be used to wake the device
+    xTaskCreate(buttonUpdateTask, "ButtonUpdateTask", 10000, NULL, 1, NULL);
     break;
   }
 
+  // Listen for action on the user button (pin 35)
+  xTaskCreate(buttonUpdateTask, "ButtonUpdateTask", 10000, NULL, 1, NULL);
   log(LogLevel::SUCCESS, "Wakeup process completed");
 }
 
@@ -168,16 +193,25 @@ void loop() {
     sleepTimer++;
 
   switch (wakeup) {
+
+    // Power on the device and initialize the display, pull time via WiFi
   case WakeupFlag::WAKEUP_INIT:
     wakeupInitLoop(&wakeup, sleepTimer, &display, &rtc);
     break;
 
+    // Update the time and sleep
   case WakeupFlag::WAKEUP_LIGHT:
     wakeupLightLoop(&wakeup, sleepTimer, &display, &rtc);
     break;
 
+    // The ESP is asleep, perform the wakeup process and do not sleep again
   case WakeupFlag::WAKEUP_FULL:
     wakeupFullLoop(&wakeup, sleepTimer, &display, &rtc, awakeState);
+    break;
+
+    // The ESP is asleep, perform the wakeup process and do not sleep again
+  case WakeupFlag::WAKEUP_DEEP_SLEEP:
+    wakeupDeepSleepLoop(&wakeup, sleepTimer, &display, &rtc, awakeState);
     break;
   }
 }
@@ -185,37 +219,47 @@ void loop() {
 void buttonUpdateTask(void *pvParameters) {
   while (1) {
     button.check();
-    // vTaskDelay(5);
+    vTaskDelay(10);
   }
+  Serial.println("Ending task 1");
   vTaskDelete(NULL);
 }
 
 void handleButtonEvent(AceButton *button, uint8_t eventType, uint8_t buttonState) {
   sleepTimer = 0;
 
+  // Print out a message for all events.
+  Serial.print(F("handleEvent(): eventType: "));
+  Serial.print(eventType);
+  Serial.print(F("; buttonState: "));
+  Serial.println(buttonState);
+
   switch (eventType) {
-  case AceButton::kEventClicked:
-    if (awakeState == AwakeState::APPS_MENU) {
-      currentAppIndex++;
-      if (currentAppIndex >= apps.size())
-        currentAppIndex = 0;
-    } else
-      apps[currentAppIndex]->buttonClick();
-    break;
-
-  case AceButton::kEventDoubleClicked:
-    if (awakeState == AwakeState::IN_APP)
-      apps[currentAppIndex]->buttonDoubleClick();
-    break;
-
-  case AceButton::kEventLongPressed:
-    if (awakeState == AwakeState::APPS_MENU) {
-      awakeState = AwakeState::IN_APP;
-      apps[currentAppIndex]->setup();
-    } else {
-      awakeState = AwakeState::APPS_MENU;
-      apps[currentAppIndex]->exit();
+  case AceButton::kEventClicked: {
+    Serial.println("Clicked");
+    // Let us start focus time if not already running. Get the focus time from the preferences
+    int time = preferences.getInt("focus_time", 0);
+    if (time <= 0) {
+      // Start the focus time to 25 minutes
+      preferences.putInt("focus_time", 25);
     }
+    break;
+  }
+
+    // Double click to reset the focus timer and start again from 25 minutes
+  case AceButton::kEventDoubleClicked:
+    Serial.println("Double Clicked");
+    // Reset the focus timer
+    preferences.putInt("focus_time", 25);
+    wakeupDeepSleep(&wakeup, &wakeupCount, &display, &rtc, &preferences);
+    break;
+
+    // Long press to turn off the focus timer
+  case AceButton::kEventLongPressed:
+    Serial.println("Long Pressed");
+    // Turn off the focus timer
+    preferences.putInt("focus_time", 0);
+    wakeupDeepSleep(&wakeup, &wakeupCount, &display, &rtc, &preferences);
     break;
   }
 }
