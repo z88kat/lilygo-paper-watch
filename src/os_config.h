@@ -30,8 +30,11 @@
 #define ENABLE_MOTOR           1
 
 // Allow the setting of your WiFi credentials
+// If these values are not set the WiFi will be disabled giving longer battery life
 #define WIFI_SSID              ""
 #define WIFI_PASSWD            ""
+
+// Set your API Key according to https://openweathermap.org/api
 // Add the weather API key
 #define WEATHER_API_KEY       ""
 

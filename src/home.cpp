@@ -66,7 +66,7 @@ void displayWeather(GxEPD_Class *display, String weatherCondition, String weathe
   // Weather condition (bottom of the screen)
   // N x,y
   display->setFont(&Outfit_60011pt7b);
-  printLeftString(display, weatherText.c_str(), 4, 188);
+  printLeftString(display, weatherText.c_str(), 4, 190);
 }
 
 /**

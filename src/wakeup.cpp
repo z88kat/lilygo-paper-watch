@@ -34,16 +34,10 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   // Get the battery status from the preferences
   int batteryStatus = preferences->getInt("battery_level", 0);
   // Get the focus time
-  int focusTime = preferences->getInt("focus_time", 0);
+  int focusTime = preferences->getInt("focus_time", -1);
 
   // Draw the time and date
   drawHomeUI(display, rtc, batteryStatus);
-
-  // Update the battery status every 10 minutes, its enough, save on battery
-  if (*wakeupCount % 10 == 0) {
-    calculateBatteryStatus(preferences);
-  }
-
   // Get the weather from the preferences and display it
   displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
   displayFocusTime(display, focusTime);
@@ -55,19 +49,28 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
 
   preferences->putLong64("prev_time_unix", rtc->getEpoch());
 
+  // Get the current minutes
+  int currentMinutes = rtc->getMinute();
+  // Get the current hour
+  int currentHour = rtc->getHour(true);
+
   // Decrease the focus time, by 1 minute
   if (focusTime > 0) {
     preferences->putInt("focus_time", focusTime - 1);
+    if (focusTime == 1) {
+      // Play the alarm sound
+      playAlarm();
+    }
   }
 
-  // Perform the WiFi actions every 4 hours
-  if (wakeupCount != nullptr && *wakeupCount >= 240) {
-    performWiFiActions(display, preferences);
-    // Reset the counter
-    wakeupCount = 0;
+  // Update the battery status every 10 minutes, its enough, save on battery
+  if (currentMinutes % 10 == 0) {
+    calculateBatteryStatus(preferences);
   }
-  // Increase the wakeup count
-  wakeupCount++;
+  // Perform the WiFi actions every 4 hours when the minutes == 0
+  if (currentMinutes == 0 && (currentHour % 4) == 0) {
+    performWiFiActions(display, preferences);
+  }
 
   // snooze....
   log(LogLevel::INFO, "Going to sleep...");
@@ -106,19 +109,6 @@ void wakeupDeepSleep(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Cl
   log(LogLevel::INFO, "Totally wake now mate...");
 }
 
-void wakeupFull(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *display, ESP32Time *rtc, Preferences *preferences) {
-  log(LogLevel::INFO, "WAKEUP_FULL");
-  setCpuFrequencyMhz(240);
-
-  // initApps();
-  log(LogLevel::SUCCESS, "wakeupFull: Apps initialized");
-
-  //  display->fillScreen(GxEPD_WHITE);
-  //  display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
-
-  // enableWifiDisplay(display);
-}
-
 // Loop
 void wakeupInitLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class *display, ESP32Time *rtc) {
   if (sleepTimer == 30) {
@@ -129,25 +119,13 @@ void wakeupInitLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class
 }
 
 void wakeupLightLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class *display, ESP32Time *rtc) {
+
+  // display.updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, false);
+  // display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
   if (sleepTimer == 15) {
     digitalWrite(PWR_EN, LOW);
     esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_KEY, 0);
     esp_sleep_enable_timer_wakeup(UPDATE_WAKEUP_TIMER_US - 15000000);
-    esp_deep_sleep_start();
-  }
-}
-
-void wakeupFullLoop(WakeupFlag *wakeupType, unsigned int sleepTimer, GxEPD_Class *display, ESP32Time *rtc, AwakeState awakeState) {
-  if (awakeState == AwakeState::APPS_MENU) {
-    drawAppsListUI(display, rtc, -1);
-    display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT);
-  } else {
-    apps[currentAppIndex]->drawUI(display);
-  }
-
-  if (sleepTimer == 15) {
-    *wakeupType = WakeupFlag::WAKEUP_LIGHT;
-    esp_sleep_enable_timer_wakeup(1000000);
     esp_deep_sleep_start();
   }
 }
@@ -289,4 +267,17 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
   }
+}
+
+/**
+ * There is no buzzer only the vibration motor, so lets kick that guy off for 5 seconds
+ */
+void playAlarm() {
+  // Set the vibration motor pin to output
+  pinMode(PIN_MOTOR, OUTPUT);
+  digitalWrite(PIN_MOTOR, HIGH);
+  // Wait 2 seconds
+  delay(2000);
+  // Turn off the motor pin
+  digitalWrite(PIN_MOTOR, LOW);
 }

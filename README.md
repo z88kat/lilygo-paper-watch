@@ -31,7 +31,7 @@ More photos of the complete watch can be found under `assets/photos/` (https://g
 
 qpaper is meant to be a minimal and lighweight smartwatch that does what it needs to do: always display time. The low power E-Paper screen of the qpaper allows it to always display the time and other information without having the display blank. The ESP32 wakes up every minute to update the display to show the correct time. More information about how the firmware works can be found in the next section.
 
-qpaper has a battery life of approx. ~3-4 days with a 250 mAh battery.
+The watch has a battery life of approx. ~3-4 days with a 250 mAh battery.
 
 ### Assembly
 
@@ -53,9 +53,7 @@ Clone this git repository and open it in VSCode. Make sure you have the Platform
 
 ### Connecting the watch to WiFi
 
-Install the "ESPTouch" app on your phone, open it and type your WiFi password. Long press the watch user button (top right of the case) to open the applications menu. Navigate to the "Connect to WiFi" app and long press user button to open it. Press "Connect" on the ESPTouch app and wait. Your watch should now be connected to the WiFi network that your phone is connected to.  If the connection times out, try again. The watch will remember the SSID and password of the network and periodically try to connect to it to update time via NTP.
-
-If this is not working, you can just set the WiFi SSID and password in `src/os_config.h` and upload the firmware again.
+Set the WiFi SSID and password in `src/os_config.h` and upload the firmware.
 
 
 ## Pre Commit Hook
@@ -83,3 +81,9 @@ The ESP32 is put into deep sleep mode to save power. The ESP32 will wake up ever
 ## Battery Life
 
 The battery life of the qpaper is approx. 3-4 days with a 250 mAh battery. The battery life can be extended by using a bigger battery. The battery life can be extended even further by disabling the WiFi connection in `src/os_config.h`. This will disable the NTP time sync and weather display.
+
+## Weather Display
+
+The weather display is implemented using the OpenWeatherMap API (https://openweathermap.org/api). You need to create an account and get an API key. The API key needs to be entered in `src/os_config.h`. The weather display will be disabled when the key is not defined by `#define WEATHER_API_KEY` in `src/os_config.h`.
+
+You location can be set by entering your address in `src/os_config.h` in the `WEATHER_LOCATION` variable. Enter City, Country. For example: `#define WEATHER_LOCATION "Amsterdam,NL"`

@@ -1,5 +1,7 @@
 /**
  * Perform a HTTPS GET request to the OpenWeatherMap API
+ *
+ * This makes use of https://openweathermap.org/api
  */
 #include "weather.h"
 
