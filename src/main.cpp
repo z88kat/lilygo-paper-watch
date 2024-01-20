@@ -30,6 +30,9 @@ Preferences preferences;
 
 RTC_DATA_ATTR WakeupFlag wakeup = WakeupFlag::WAKEUP_INIT;
 RTC_DATA_ATTR uint32_t wakeupCount = 0;
+// When the device is first powered on, we need to initialize a few things
+// But we don't want to do that for every wakeup
+RTC_DATA_ATTR bool isFirstBoot = true;
 
 // We can use this to switch states via the button
 // This is used to switch between the apps menu and the home screen for example
@@ -41,6 +44,7 @@ AceButton button(PIN_KEY);
 void buttonUpdateTask(void *pvParameters);
 void focusTimerTask(void *pvParameters);
 void handleButtonEvent(AceButton *button, uint8_t eventType, uint8_t buttonState);
+void performFirstBootActions();
 
 hw_timer_t *uiTimer = NULL;
 volatile SemaphoreHandle_t timerSemaphore;
@@ -79,6 +83,7 @@ void setup() {
   adcAttachPin(BAT_ADC);
   analogReadResolution(12);
   analogSetWidth(50);
+  log(LogLevel::SUCCESS, "Hardware pins initiliazed");
 
   // The button has been pressed to wake up the device
   if (digitalRead(PIN_KEY) == 0) {
@@ -88,27 +93,10 @@ void setup() {
   }
   log(LogLevel::INFO, "Starting wakeup process...");
 
-  log(LogLevel::SUCCESS, "Hardware pins initiliazed");
-
   preferences.begin(PREFS_KEY);
 
-  // Check if the WIFI_SSID and WIFI_PASSWD are set and save them to the preferences
-  if (strlen(WIFI_SSID) > 0 && strlen(WIFI_PASSWD) > 0) {
-    preferences.putString("wifi_ssid", WIFI_SSID);
-    preferences.putString("wifi_passwd", WIFI_PASSWD);
-    log(LogLevel::SUCCESS, "Wifi Settings Saved");
-  }
-
-  // Save the weather api key to the preferences
-  if (strlen(WEATHER_API_KEY) > 0) {
-    preferences.putString("weather_api_key", WEATHER_API_KEY);
-    log(LogLevel::SUCCESS, "Weather API Key Saved");
-  }
-
-  // Save the current location as defined in the os_config.h
-  if (strlen(WEATHER_LOCATION) > 0) {
-    preferences.putString("location", WEATHER_LOCATION);
-  }
+  // Perform an actions when the devices is reset or first powered on
+  performFirstBootActions();
 
   // When the wifi is connected, pull the time from the ntp server
   WiFi.onEvent(WiFiConnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
@@ -237,8 +225,37 @@ void handleButtonEvent(AceButton *button, uint8_t eventType, uint8_t buttonState
   case AceButton::kEventLongPressed:
     Serial.println("Long Pressed");
     // Turn off the focus timer
-    preferences.putInt("focus_time", -1);
+    // We need to set the focus time to 99, so that the focus timer does not start again
+    // when we make a call to wakeupDeepSleep
+    preferences.putInt("focus_time", 99);
+    // refresh the display
     wakeupDeepSleep(&wakeup, &wakeupCount, &display, &rtc, &preferences);
     break;
   }
+}
+
+void performFirstBootActions() {
+  if (!isFirstBoot)
+    return;
+
+  // Check if the WIFI_SSID and WIFI_PASSWD are set and save them to the preferences
+  if (strlen(WIFI_SSID) > 0 && strlen(WIFI_PASSWD) > 0) {
+    preferences.putString("wifi_ssid", WIFI_SSID);
+    preferences.putString("wifi_passwd", WIFI_PASSWD);
+    log(LogLevel::SUCCESS, "Wifi Settings Saved");
+  }
+
+  // Save the weather api key to the preferences
+  if (strlen(WEATHER_API_KEY) > 0) {
+    preferences.putString("weather_api_key", WEATHER_API_KEY);
+    log(LogLevel::SUCCESS, "Weather API Key Saved");
+  }
+
+  // Save the current location as defined in the os_config.h
+  if (strlen(WEATHER_LOCATION) > 0) {
+    preferences.putString("location", WEATHER_LOCATION);
+    log(LogLevel::SUCCESS, "Weather Location Saved");
+  }
+
+  isFirstBoot = false;
 }

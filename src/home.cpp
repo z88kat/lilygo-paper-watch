@@ -93,3 +93,15 @@ void displayFocusTime(GxEPD_Class *display, int focusTime) {
     printLeftString(display, a.c_str(), 4, 22);
   }
 }
+
+/**
+ * Display the time
+ */
+void displayTime(GxEPD_Class *display, ESP32Time *rtc) {
+  // Time
+  display->setFont(&Outfit_80036pt7b);
+  String hoursFiller = rtc->getHour(true) < 10 ? "0" : "";
+  String minutesFiller = rtc->getMinute() < 10 ? "0" : "";
+  String timeStr = hoursFiller + String(rtc->getHour(true)) + ":" + minutesFiller + String(rtc->getMinute());
+  printCenterString(display, timeStr.c_str(), 100, 118);
+}

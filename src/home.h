@@ -17,3 +17,4 @@ void enableWifiDisplay(GxEPD_Class *display);
 void displayWeather(GxEPD_Class *display, String weatherCondition, String weatherTemp);
 void displayBatteryStatus(GxEPD_Class *display, int batteryStatus);
 void displayFocusTime(GxEPD_Class *display, int focusTime);
+void displayTime(GxEPD_Class *display, ESP32Time *rtc);

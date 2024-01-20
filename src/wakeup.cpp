@@ -57,6 +57,7 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   // Decrease the focus time, by 1 minute
   if (focusTime > 0) {
     preferences->putInt("focus_time", focusTime - 1);
+    Serial.println("focusTime: " + String(focusTime));
     if (focusTime == 1) {
       // Play the alarm sound
       playAlarm();
@@ -100,6 +101,10 @@ void wakeupDeepSleep(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Cl
     // Start the focus time to 25 minutes
     preferences->putInt("focus_time", 25);
     focusTime = 25;
+  } else if (focusTime == 99) {
+    // Special case, if the focus time is 99, then we need to reset it to 0
+    preferences->putInt("focus_time", 0);
+    focusTime = 0;
   }
 
   displayFocusTime(display, focusTime);
