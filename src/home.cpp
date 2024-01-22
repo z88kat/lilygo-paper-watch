@@ -5,15 +5,31 @@ const char *months[] = {"January", "February", "March", "April", "May", "June", 
 const char *days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
+
+  String hoursFiller = rtc->getHour(true) < 10 ? "0" : "";
+  String minutesFiller = rtc->getMinute() < 10 ? "0" : "";
+  String timeStr = hoursFiller + String(rtc->getHour(true)) + ":" + minutesFiller + String(rtc->getMinute());
+
+  const unsigned char *icon_battery_small_array[6] = {epd_bitmap_icon_battery_0_small,  epd_bitmap_icon_battery_20_small,
+                                                      epd_bitmap_icon_battery_40_small, epd_bitmap_icon_battery_60_small,
+                                                      epd_bitmap_icon_battery_80_small, epd_bitmap_icon_battery_100_small};
+
+  // This is the only way I managed to get the screen to update properly without the full .update() function
+  // draw black box + white box over the screen
+  // We do this to solve the screen corruption problem that we get when using the updateWindow function
+  // It seems the screen does not really clear all black pixels when just drawing a white box over it
+  // NOTE: It might look like it works when plugged into the power, but soon as you use the battery the display falls apart
+  display->fillRect(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
+  display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, true);
+  display->fillRect(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_WHITE);
+  display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, true);
+
   display->fillScreen(GxEPD_WHITE);
   display->setTextColor(GxEPD_BLACK);
   display->setTextWrap(false);
 
   // Time
   display->setFont(&Outfit_80036pt7b);
-  String hoursFiller = rtc->getHour(true) < 10 ? "0" : "";
-  String minutesFiller = rtc->getMinute() < 10 ? "0" : "";
-  String timeStr = hoursFiller + String(rtc->getHour(true)) + ":" + minutesFiller + String(rtc->getMinute());
   printCenterString(display, timeStr.c_str(), 100, 118);
 
   // Display the Date
@@ -23,17 +39,8 @@ void drawHomeUI(GxEPD_Class *display, ESP32Time *rtc, int batteryStatus) {
 
   // Battery
   printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
-
-  const unsigned char *icon_battery_small_array[6] = {epd_bitmap_icon_battery_0_small,  epd_bitmap_icon_battery_20_small,
-                                                      epd_bitmap_icon_battery_40_small, epd_bitmap_icon_battery_60_small,
-                                                      epd_bitmap_icon_battery_80_small, epd_bitmap_icon_battery_100_small};
+  // Draw icon
   display->drawBitmap(170, 2, icon_battery_small_array[batteryStatus / 20], 28, 28, GxEPD_BLACK);
-
-  // Status icons
-  // Wifi
-  // display->drawBitmap(2, 2, icon_wifi_small, 28, 28, GxEPD_BLACK);
-  // BLE Tooth
-  // display->drawBitmap(30, 2, icon_no_ble_small, 28, 28, GxEPD_BLACK);
 }
 
 /**
@@ -61,20 +68,12 @@ void displayWeather(GxEPD_Class *display, String weatherCondition, String weathe
   }
 
   // Concatenate the weather condition and temperature + C
-  String weatherText = weatherCondition + " " + weatherTemp + "°C";
+  String weatherText = weatherCondition + " " + weatherTemp + "C";
 
   // Weather condition (bottom of the screen)
   // N x,y
   display->setFont(&Outfit_60011pt7b);
   printLeftString(display, weatherText.c_str(), 4, 190);
-}
-
-/**
- * Display the battery status
- */
-void displayBatteryStatus(GxEPD_Class *display, int batteryStatus) {
-  // Battery
-  printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
 }
 
 /**
@@ -104,4 +103,14 @@ void displayTime(GxEPD_Class *display, ESP32Time *rtc) {
   String minutesFiller = rtc->getMinute() < 10 ? "0" : "";
   String timeStr = hoursFiller + String(rtc->getHour(true)) + ":" + minutesFiller + String(rtc->getMinute());
   printCenterString(display, timeStr.c_str(), 100, 118);
+  display->updateWindow(0, 60, 200, 60, true);
+}
+
+/**
+ * Display the battery status and refresh the display
+ */
+void displayBatteryStatus(GxEPD_Class *display, int batteryStatus) {
+  // Battery
+  printRightString(display, String(String(batteryStatus) + "%").c_str(), 166, 22);
+  // display->updateWindow(166, 0, 34, 34, true);
 }

@@ -18,3 +18,4 @@ void displayWeather(GxEPD_Class *display, String weatherCondition, String weathe
 void displayBatteryStatus(GxEPD_Class *display, int batteryStatus);
 void displayFocusTime(GxEPD_Class *display, int focusTime);
 void displayTime(GxEPD_Class *display, ESP32Time *rtc);
+void displayBatteryStatus(GxEPD_Class *display, int batteryStatus);

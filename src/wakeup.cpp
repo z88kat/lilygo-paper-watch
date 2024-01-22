@@ -13,11 +13,12 @@ void wakeupInit(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class *
   rtc->setTime(preferences->getLong64("prev_time_unix", 0) + 15);
 
   // Get the battery status from the preferences
+  calculateBatteryStatus(preferences);
   int batteryStatus = preferences->getInt("battery_level", 0);
   drawHomeUI(display, rtc, batteryStatus);
 
-  // Get the weather from the preferences and display it
-  displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
+  // We do not display the weather on the init screen, its probably outdated anyway
+  // displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
   displayFocusTime(display, preferences->getInt("focus_time", 0));
 
   // Re-draw the display
@@ -34,7 +35,21 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   // Get the battery status from the preferences
   int batteryStatus = preferences->getInt("battery_level", 0);
   // Get the focus time
-  int focusTime = preferences->getInt("focus_time", -1);
+  int focusTime = preferences->getInt("focus_time", 0);
+  bool initAlarm = false;
+  // When starting the focus time should be 25
+  // Decrease the focus time, by 1 minute
+  if (focusTime > 0) {
+    focusTime--;
+    // Reduce the focus time by 1 minute
+    // Update the focus time in the preferences
+    preferences->putInt("focus_time", focusTime);
+    // Serial.println("focusTime: " + String(focusTime));
+    if (focusTime == 0) { // Needs to be done AFTER updating the display
+      // Play the alarm sound
+      initAlarm = true;
+    }
+  }
 
   // Draw the time and date
   drawHomeUI(display, rtc, batteryStatus);
@@ -43,26 +58,27 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   displayFocusTime(display, focusTime);
 
   // Refresh the display
-  display->update();
+  // display->update();  // Gives us nasty flicking
+  // Perform an update of the display using the window function which is faster and more power efficient
+  // However, we do have to update the complete screen. I tried small parts of the screen, but it was not
+  // working as we got corrupted parts of the screen as the background is not updated correctly
+  // It's possible but requires that you first set the background area black, then white, then add the text
+  //  display->update();
+  display->updateWindow(0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, true);
   // Power it down to save battery
   display->powerDown();
 
   preferences->putLong64("prev_time_unix", rtc->getEpoch());
 
+  // Make the motor vibration for 0.5 seconds
+  if (initAlarm) {
+    playAlarm();
+  }
+
   // Get the current minutes
   int currentMinutes = rtc->getMinute();
   // Get the current hour
   int currentHour = rtc->getHour(true);
-
-  // Decrease the focus time, by 1 minute
-  if (focusTime > 0) {
-    preferences->putInt("focus_time", focusTime - 1);
-    Serial.println("focusTime: " + String(focusTime));
-    if (focusTime == 1) {
-      // Play the alarm sound
-      playAlarm();
-    }
-  }
 
   // Update the battery status every 10 minutes, its enough, save on battery
   if (currentMinutes % 10 == 0) {
@@ -89,11 +105,8 @@ void wakeupDeepSleep(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Cl
   setCpuFrequencyMhz(80);
 
   // Get the battery status from the preferences
+  calculateBatteryStatus(preferences); // re-calculate it
   int batteryStatus = preferences->getInt("battery_level", 0);
-  drawHomeUI(display, rtc, batteryStatus);
-
-  // Get the weather from the preferences and display it
-  displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
 
   // Let us start focus time if not already running. Get the focus time from the preferences
   int focusTime = preferences->getInt("focus_time", 0);
@@ -107,11 +120,15 @@ void wakeupDeepSleep(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Cl
     focusTime = 0;
   }
 
+  // Draw the time and date + battery status
+  drawHomeUI(display, rtc, batteryStatus);
+  // Get the weather from the preferences and display it
+  displayWeather(display, preferences->getString("weather_c"), preferences->getString("weather_t"));
   displayFocusTime(display, focusTime);
 
-  display->update();
+  display->update(); // Make a full flashing update!
 
-  log(LogLevel::INFO, "Totally wake now mate...");
+  log(LogLevel::INFO, "Totally awake now mate...");
 }
 
 // Loop
@@ -281,8 +298,8 @@ void playAlarm() {
   // Set the vibration motor pin to output
   pinMode(PIN_MOTOR, OUTPUT);
   digitalWrite(PIN_MOTOR, HIGH);
-  // Wait 2 seconds
-  delay(2000);
+  // Wait 0.5 seconds
+  delay(500);
   // Turn off the motor pin
   digitalWrite(PIN_MOTOR, LOW);
 }

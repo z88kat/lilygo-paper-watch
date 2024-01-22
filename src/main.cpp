@@ -213,17 +213,17 @@ void handleButtonEvent(AceButton *button, uint8_t eventType, uint8_t buttonState
     break;
   }
 
-    // Double click to reset the focus timer and start again from 25 minutes
+    // Double click to reset the focus timer and start again from 5 minutes
   case AceButton::kEventDoubleClicked:
-    Serial.println("Double Clicked");
+    Serial.println("Double Clicked, setting focus timer to 5 minutes");
     // Reset the focus timer
-    preferences.putInt("focus_time", 25);
+    preferences.putInt("focus_time", 5);
     wakeupDeepSleep(&wakeup, &wakeupCount, &display, &rtc, &preferences);
     break;
 
     // Long press to turn off the focus timer
   case AceButton::kEventLongPressed:
-    Serial.println("Long Pressed");
+    Serial.println("Long Pressed. disable focus timer");
     // Turn off the focus timer
     // We need to set the focus time to 99, so that the focus timer does not start again
     // when we make a call to wakeupDeepSleep
