@@ -1,8 +1,8 @@
 #pragma once
 
 // OS Configuration
-#define DEVICE_NAME            "qewer33's Watch"
-#define PREFS_KEY              "qpaper-os"
+#define DEVICE_NAME            "z88kat Watch"
+#define PREFS_KEY              "lilygo-prefs"
 
 #define PIN_KEY                35
 #define PWR_EN                 5

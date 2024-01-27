@@ -73,6 +73,7 @@ void wakeupLight(WakeupFlag *wakeupType, unsigned int *wakeupCount, GxEPD_Class 
   // Make the motor vibration for 0.5 seconds
   if (initAlarm) {
     playAlarm();
+    initAlarm = false;
   }
 
   // Get the current minutes
@@ -295,6 +296,7 @@ void performWiFiActions(GxEPD_Class *display, Preferences *preferences) {
  * There is no buzzer only the vibration motor, so lets kick that guy off for 5 seconds
  */
 void playAlarm() {
+  Serial.println("Playing alarm");
   // Set the vibration motor pin to output
   pinMode(PIN_MOTOR, OUTPUT);
   digitalWrite(PIN_MOTOR, HIGH);

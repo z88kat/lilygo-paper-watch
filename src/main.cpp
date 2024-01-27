@@ -66,6 +66,9 @@ void setup() {
 
   SPI.begin(SPI_SCK, -1, SPI_DIN, EPD_CS);
 
+  // Turn off the motor pin (It appears to turn on after deep sleep)
+  digitalWrite(PIN_MOTOR, LOW);
+
   pinMode(PWR_EN, OUTPUT);
   digitalWrite(PWR_EN, HIGH);
   pinMode(PIN_KEY, INPUT_PULLUP);
@@ -234,7 +237,12 @@ void handleButtonEvent(AceButton *button, uint8_t eventType, uint8_t buttonState
   }
 }
 
+/**
+ * Actions to perform once on the first boot
+ */
 void performFirstBootActions() {
+
+  // These actions should not be performed on every wakeup
   if (!isFirstBoot)
     return;
 

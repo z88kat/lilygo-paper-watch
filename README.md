@@ -1,3 +1,6 @@
+![lilygo-paper-watch](assets/photos/banner.jpeg)
+
+# lilygo-paper-watch
 lily-paper-watch is a smartwatch firmware implementation for the LILYGO T-Wrist E-Paper ESP32 development board (https://github.com/Xinyuan-LilyGO/Wrist-E-Paper). This repositoy houses the source code along with 3D models and the FreeCAD file of the smartwatch case to make your very own qpaper!
 This project is based upon qpaperOS by qewer33 (https://github.com/qewer33/qpaperOS)
 
@@ -25,7 +28,7 @@ The above a just power hungry features that are not necessary for a minimal smar
 
 ## The Product
 
-![screenshot](assets/qpaper_screenshot.jpeg)
+![screenshot](assets/photos/IMG_1267.jpeg)
 
 More photos of the complete watch can be found under `assets/photos/` (https://github.com/z88kat/lilygo-paper-watch/tree/main/assets/photos)
 
@@ -33,7 +36,7 @@ qpaper is meant to be a minimal and lighweight smartwatch that does what it need
 
 The watch has a battery life of approx. ~3-4 days with a 250 mAh battery.
 
-### Assembly
+## Assembly
 
 The outer sheell/case of the qpaper is meant to be 3D printed and assembled with 4 short M2 screws. The 3D models and FreeCAD file for the case can be found under `assets/3d/` (https://github.com/qewer33/qpaperOS/tree/main/assets/3d)
 
@@ -47,11 +50,11 @@ Required parts for assembly:
 - 4x short M2/M1.6/M1.4 screws
 - 22mm watch strap (compatible with Huawei GT2/GT3 straps)
 
-### Uploading the firmware
+## Uploading the firmware
 
 Clone this git repository and open it in VSCode. Make sure you have the PlatformIO extension installed. Connect the USB-C cable to your computer and to the T-U2T. Connect the T-U2T to the watch and click the "PlatformIO: Upload" button in the status bar.
 
-### Connecting the watch to WiFi
+## Connecting the watch to WiFi
 
 Set the WiFi SSID and password in `src/os_config.h` and upload the firmware.
 
@@ -72,7 +75,13 @@ qpaperOS is the firmware part of the qpaper project. It is developed to work wit
 
 ## Focus Timer
 
-The focus timer is a simple timer that counts down from 25 minutes. It is meant to be used for the Pomodoro Technique (https://en.wikipedia.org/wiki/Pomodoro_Technique). The timer will vibrate when the time is up. The timer can be started by  pressing the user button (top right of the case). The timer can be reset by long pressing the user button.
+The focus timer is a simple timer that counts down from 25 minutes. It is meant to be used for the Pomodoro Technique (https://en.wikipedia.org/wiki/Pomodoro_Technique). The timer will vibrate when the time is up.
+
+*Using the Timer*:
+
+* Press the user button (top right) once to start the timer for 25 minutes.
+* Double press the user button to start the timer for 5 minutes.
+* Long press the user button to reset / stop the timer.
 
 ## Deep Sleep
 
@@ -80,7 +89,9 @@ The ESP32 is put into deep sleep mode to save power. The ESP32 will wake up ever
 
 ## Battery Life
 
-The battery life of the qpaper is approx. 3-4 days with a 250 mAh battery. The battery life can be extended by using a bigger battery. The battery life can be extended even further by disabling the WiFi connection in `src/os_config.h`. This will disable the NTP time sync and weather display.
+The battery life of the qpaper is approx. 3-4 days with a 250 mAh battery. In order to achieve this I needed to perform to refresh the display using updateWindows which causes a few graphical glitches. The glitches are not that bad and I think it is a good tradeoff for a longer battery life.  If you don't like it, just comment back in the display.update() in wakeup.cpp.
+
+The battery life can be extended by using a bigger battery. The battery life can be extended even further by disabling the WiFi connection in `src/os_config.h`. This will disable the NTP time sync and weather display.
 
 ## Weather Display
 
